@@ -17,23 +17,60 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
-  $(function () {
+	var client = null;
+	var players = [];
+	
     var socket = io();
-    $('form').submit(function(){
-      socket.emit('chat', $('#m').val());
-      $('#m').val('');
-      return false;
+	
+	$(document).ready(function() {
+		window.addEventListener('keydown', keypressHandler, false);
+	});
+	
+	// on connection
+	socket.on('connection', function(data){
+		console.log(data);
+		client = data;
     });
-    socket.on('chat', function(data){
-      $('#messages').append($('<li>').text("user#" + data.id + ": " + data.msg));
-    });
-  });
+	
+	// on move
+	socket.on('player_location', function(data) {
+		console.log('player: ' + data.id + ' _location data: ' + JSON.stringify(data));
+		
+		var state = true;
+		for(var i = 0; i < players.length && state; i++) {
+			if(players[i].id == data.id) { players[i] = data; state = false; }
+		}
+		if(state) { players.push(data); }
+	});
+	
+	// call when time to start game so fetch other players locations
+	function start() {
+		socket.emit('new_players', client);
+	}
+	
+	/* axis: -, +
+	 * x: <down>, <up>
+	 * y: <left>, <right>
+	 * z: <alt>, <ctrl>
+	*/
+	function keypressHandler(e) {
+		console.log('key press' + e);
+		var keyCode = e.keyCode;
+		if(keyCode == 38) { client.p_x++; } // up
+		else if(keyCode == 40) { client.p_x--; } // down
+		else if(keyCode == 37) { client.p_y--; } // left
+		else if(keyCode == 39) { client.p_y++; } // right
+		else if(keyCode == 17) { client.p_z--; } // alt
+		else if(keyCode == 18) { client.p_z++; } // ctrl
+		else { return; }
+		socket.emit('move', client);
+	}
 </script>
 
   <body>
     <ul id="messages"></ul>
     <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      <input type="submit" id="m" autocomplete="off" value="Submit"/>
     </form>
   </body>
 </html>

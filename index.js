@@ -7,58 +7,44 @@ app.get('/', function(req, res){
 });
 
 var usersOnline = 0;
-var users = [];
+var clients = [];
 
 io.on('connection', function(socket){
-  
-  /*socket.userId = userId ++;
-  console.log('a user connected, user id: ' + socket.userId);
-
-  socket.on('chat', function(msg){
-    console.log('message from user#' + socket.userId + ": " + msg);
-    io.emit('chat', {
-      id: socket.userId,
-      msg: msg
-    });
-  });*/
-  
-  socket.on('move', function(msg){
-		console.log("Move Command Called with " + msg);
-	    //msg: id p.x p.y p.z
-		//Process Move Data 
-		var data = msg.split(" ");
-		var id = Number(data[0]);
+	console.log("NEW HIT: " + socket.id);
+	// add new user to array
+	clients.push(socket.id);
+	
+	// create client object and send back to newly connected user
+	var client = new Client(socket.id, 'socket');
+	socket.emit('connection', client);
+	
+	// also send location to every other user
+	socket.broadcast.emit('player_location', client);
+	
+	
+	// if receive a move event notify other users
+	socket.on('move', function(data) {
+		socket.broadcast.emit('player_location', data);
+	});
+	
+	// when get a new player
+	socket.on('new_players', function(data) {
+		console.log('NP: ' + JSON.stringify(data)); console.log(clients);
 		
-		users[id].p_x = Number(data[1]);
-		users[id].p_y = Number(data[2]);
-		users[id].p_z = Number(data[3]);
-		
-		console.log(users[id]);
-		
-		//Send Move Command
-		io.emit('move',  msg);
-  });
-  
-  socket.on('loginAttempt', function(msg){
-	    // msg: username
-		console.log("Login from: " + msg + " attempted");
-		
-		users.push(new Client(msg, usersOnline, socket));
-		console.log(users[usersOnline]);
-		//io.emit('loginCert', msg + " " + usersOnline );
-		socket.emit('loginCert', msg + " " + usersOnline);
-		
-		usersOnline++;
-  });
-  
+		var state = false;
+		// only post to users after you
+		for(var i = 0; i < clients.length; i++) {
+			if(state) { io.to(clients[i]).emit('player_location', data); }
+			state |= clients[i] == socket.id;
+		}
+	});
 });
 
 //Client Class
-
-function Client(user, id, sock) {
-	this.username = user;
+function Client(/*user, */id, sock) {
+	//this.username = user;
 	this.id = id;
-	this.socket = "sock";
+	this.socket = sock;
 	this.p_x = 0;
 	this.p_y = 0;
 	this.p_z = 0;
