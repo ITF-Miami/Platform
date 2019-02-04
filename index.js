@@ -1,56 +1,49 @@
-var app = require('express')();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-
-app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+var io = require('socket.io')(4567, {
+	transports: ['websocket'],
+	origins: '*:*'
 });
 
+var users = [];
 var usersOnline = 0;
-var clients = [];
 
 io.on('connection', function(socket){
-	console.log("NEW HIT: " + socket.id);
-	// add new user to array
-	clients.push(socket.id);
+	console.log('conn!');
 	
-	// create client object and send back to newly connected user
-	var client = new Client(socket.id, 'socket');
-	socket.emit('connection', client);
-	
-	// also send location to every other user
-	socket.broadcast.emit('player_location', client);
-	
-	
-	// if receive a move event notify other users
-	socket.on('move', function(data) {
-		socket.broadcast.emit('player_location', data);
+	socket.on('login', function(data) {
+		var usr = new Client("player-" + usersOnline, usersOnline++, socket);
+		
+		socket.emit('loginCert', {user: usr, players: users});  // send back to socket
+		socket.broadcast.emit('newPlayer', {user: usr});  // send to all other sockets of new player
+		
+		users.push(usr);
+		console.log(usr);
 	});
 	
-	// when get a new player
-	socket.on('new_players', function(data) {
-		console.log('NP: ' + JSON.stringify(data)); console.log(clients);
+	socket.on('move', function(data) {
+		console.log(data);
 		
-		var state = false;
-		// only post to users after you
-		for(var i = 0; i < clients.length; i++) {
-			if(state) { io.to(clients[i]).emit('player_location', data); }
-			state |= clients[i] == socket.id;
+		for(var i = 0; i < users.length; i++) {
+			if(users[i].id == data.id) {
+				users[i].p_x = data.p_x;
+				users[i].p_y = data.p_y;
+				users[i].p_z = data.p_z;
+				io.emit('move', { user: data});
+				break;
+			}
 		}
+	});
+
+	socket.on('error', function(data) {
+		console.log('<error>');
+		console.log(data);
 	});
 });
 
-//Client Class
-function Client(/*user, */id, sock) {
-	//this.username = user;
+function Client(user, id, sock) {
+	this.username = user;
 	this.id = id;
-	this.socket = sock;
+	this.socket = "sock";
 	this.p_x = 0;
 	this.p_y = 0;
 	this.p_z = 0;
 }
-
-
-http.listen(3000, function(){
-  console.log('listening on *:3000');
-});
