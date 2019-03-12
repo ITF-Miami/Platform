@@ -32,6 +32,17 @@ io.on('connection', function(socket){
 			}
 		}
 	});
+	
+	socket.on('headRotate', function(data) {
+		console.log('headRotate' + JSON.stringify(data));
+		
+		for(var i = 0; i < users.length; i++) {
+			if(users[i].id == data.id) {
+				socket.broadcast.emit('headRotate', { user: data}); // already did the move in our player, need to send it to everybody else
+				break;
+			}
+		}
+	});
 
 	socket.on('error', function(data) {
 		console.log('<error>');
