@@ -4,6 +4,7 @@ var io = require('socket.io')(4567, {
 });
 
 var users = [];
+var userRot = [];
 var usersOnline = 0;
 
 io.on('connection', function(socket){
@@ -17,6 +18,9 @@ io.on('connection', function(socket){
 		
 		users.push(usr);
 		console.log(usr);
+		
+		var rotateData = new RotateCoordinate (0, 0, 0);
+		userRot.push(rotateData);
 	});
 	
 	socket.on('move', function(data) {
@@ -33,6 +37,8 @@ io.on('connection', function(socket){
 		}
 	});
 	
+	
+	/*
 	socket.on('headRotate', function(data) {
 		console.log('headRotate' + JSON.stringify(data));
 		
@@ -43,7 +49,18 @@ io.on('connection', function(socket){
 			}
 		}
 	});
-
+	*/
+	
+	socket.on('headRotate', function(data) {
+		userRot[data.id].r_x = data.r_x;
+		userRot[data.id].r_y = data.r_y;
+		userRot[data.id].r_z = data.r_z;
+	});
+	
+	socket.on('rotateAllOpponents', function() {
+		io.emit('rotateOpponents', {usrRotation: userRot});
+	});
+	
 	socket.on('error', function(data) {
 		console.log('<error>');
 		console.log(data);
@@ -57,4 +74,10 @@ function Client(user, id, sock) {
 	this.p_x = 0;
 	this.p_y = 0;
 	this.p_z = 0;
+}
+
+function RotateCoordinate (x, y, z) {
+	this.r_x = x;
+	this.r_y = y;
+	this.r_z = z;
 }
