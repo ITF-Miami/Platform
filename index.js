@@ -6,9 +6,11 @@ var io = require('socket.io')(4567, {
 var users = [];
 var userRot = [];
 var usersOnline = 0;
-
+	
 io.on('connection', function(socket){
+	
 	console.log('conn!');
+	
 	
 	socket.on('login', function(data) {
 		var usr = new Client("player-" + usersOnline, usersOnline++, socket);
@@ -57,8 +59,15 @@ io.on('connection', function(socket){
 		userRot[data.id].r_z = data.r_z;
 	});
 	
+	var myInterval = setInterval(function() {
+	//io.emit('rotateOpponents', {usrRotation: userRot});
+	io.emit('rotateOpponents', "Test");
+	}, 1000);
+	
 	socket.on('rotateAllOpponents', function() {
-		io.emit('rotateOpponents', {usrRotation: userRot});
+		//if true, emit rotate all opponents
+		//make false
+		//io.emit('rotateOpponents', {usrRotation: userRot});
 	});
 	
 	socket.on('error', function(data) {
