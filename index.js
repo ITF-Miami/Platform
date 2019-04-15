@@ -59,22 +59,22 @@ io.on('connection', function(socket){
 		userRot[data.id].r_z = data.r_z;
 	});
 	
-	var myInterval = setInterval(function() {
-	//io.emit('rotateOpponents', {usrRotation: userRot});
-	io.emit('rotateOpponents', "Test");
-	}, 1000);
+
 	
-	socket.on('rotateAllOpponents', function() {
-		//if true, emit rotate all opponents
-		//make false
-		//io.emit('rotateOpponents', {usrRotation: userRot});
-	});
+	var myInterval = setInterval(function() {
+		io.emit('rotateOpponents', {usrRotation: userRot});
+		//io.emit('rotateOpponents', "Test");
+		console.log('Test');
+	}, 1000);	
+	
 	
 	socket.on('error', function(data) {
 		console.log('<error>');
 		console.log(data);
 	});
 });
+
+
 
 function Client(user, id, sock) {
 	this.username = user;
